@@ -1,8 +1,33 @@
+enum ProjectStatus {
+    Active,
+    Finished
+}
+
+// Project Type
+
+class Project {
+    id: string;
+    title: string;
+    description: string;
+    people: number;
+    status: ProjectStatus;
+
+    constructor(id: string, t: string, d: string, p: number, s: ProjectStatus) {
+        this.id = id;
+        this.title = t;
+        this.description = d;
+        this.people = p;
+        this.status = s;
+    }
+}
+
+type Listener = (items: Project[]) => void;
+
 // Project State Management
 
 class ProjectState {
-    private listeners: any[] = [];
-    private projects: any[] = [];
+    private listeners: Listener[] = [];
+    private projects: Project[] = [];
     private static instance: ProjectState;
 
     private constructor() {}
@@ -15,17 +40,18 @@ class ProjectState {
         return this.instance;
     }
 
-    addListener(listenerFn: Function) {
+    addListener(listenerFn: Listener) {
         this.listeners.push(listenerFn);
     }
 
     addProject(title: string, description: string, numOfPeople: number) {
-        let newProject = {
-            id: Math.random().toString(),
+        let newProject = new Project(
+            Math.random().toString(),
             title,
             description,
-            people: numOfPeople
-        };
+            numOfPeople,
+            ProjectStatus.Active
+        );
 
         this.projects.push(newProject);
 
@@ -102,7 +128,7 @@ class ProjectList {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
     element: HTMLElement;
-    assignedProjects: any[];
+    assignedProjects: Project[];
 
     constructor(private type: 'active' | 'finished') {
         this.templateElement = document.getElementById(
@@ -119,7 +145,7 @@ class ProjectList {
         this.element = importedNode.firstElementChild as HTMLElement;
         this.element.id = `${this.type}-projects`;
 
-        projectState.addListener((projects: any[]) => {
+        projectState.addListener((projects: Project[]) => {
             this.assignedProjects = projects;
             this.renderProjects();
         });
