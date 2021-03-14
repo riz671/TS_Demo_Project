@@ -1,26 +1,20 @@
+// Project Type
 enum ProjectStatus {
     Active,
     Finished
 }
 
-// Project Type
-
 class Project {
-    id: string;
-    title: string;
-    description: string;
-    people: number;
-    status: ProjectStatus;
-
-    constructor(id: string, t: string, d: string, p: number, s: ProjectStatus) {
-        this.id = id;
-        this.title = t;
-        this.description = d;
-        this.people = p;
-        this.status = s;
-    }
+    constructor(
+        public id: string,
+        public title: string,
+        public description: string,
+        public people: number,
+        public status: ProjectStatus
+    ) {}
 }
 
+// Project State Management
 type Listener<T> = (items: T[]) => void;
 
 class State<T> {
@@ -30,7 +24,6 @@ class State<T> {
         this.listeners.push(listenerFn);
     }
 }
-// Project State Management
 
 class ProjectState extends State<Project> {
     private projects: Project[] = [];
@@ -49,16 +42,14 @@ class ProjectState extends State<Project> {
     }
 
     addProject(title: string, description: string, numOfPeople: number) {
-        let newProject = new Project(
+        const newProject = new Project(
             Math.random().toString(),
             title,
             description,
             numOfPeople,
             ProjectStatus.Active
         );
-
         this.projects.push(newProject);
-
         for (const listenerFn of this.listeners) {
             listenerFn(this.projects.slice());
         }
@@ -67,9 +58,9 @@ class ProjectState extends State<Project> {
 
 const projectState = ProjectState.getInstance();
 
-// Validating Interface
+// Validation
 interface Validatable {
-    value: string;
+    value: string | number;
     required?: boolean;
     minLength?: number;
     maxLength?: number;
@@ -77,57 +68,57 @@ interface Validatable {
     max?: number;
 }
 
-function validate(validateObj: Validatable) {
+function validate(validatableInput: Validatable) {
     let isValid = true;
-
-    if (validateObj.required) {
-        isValid = isValid && validateObj.value.toString().trim().length !== 0;
+    if (validatableInput.required) {
+        isValid =
+            isValid && validatableInput.value.toString().trim().length !== 0;
     }
-
     if (
-        validateObj.minLength !== undefined &&
-        typeof validateObj.value === 'string'
+        validatableInput.minLength != null &&
+        typeof validatableInput.value === 'string'
     ) {
-        isValid = isValid && validateObj.value.length > validateObj.minLength;
+        isValid =
+            isValid &&
+            validatableInput.value.length >= validatableInput.minLength;
     }
-
     if (
-        validateObj.maxLength !== undefined &&
-        typeof validateObj.value === 'string'
+        validatableInput.maxLength != null &&
+        typeof validatableInput.value === 'string'
     ) {
-        isValid = isValid && validateObj.value.length < validateObj.maxLength;
+        isValid =
+            isValid &&
+            validatableInput.value.length <= validatableInput.maxLength;
     }
-
     if (
-        validateObj.min !== undefined &&
-        typeof validateObj.value === 'number'
+        validatableInput.min != null &&
+        typeof validatableInput.value === 'number'
     ) {
-        isValid = isValid && validateObj.value > validateObj.min;
+        isValid = isValid && validatableInput.value >= validatableInput.min;
     }
-
     if (
-        validateObj.max !== undefined &&
-        typeof validateObj.value === 'number'
+        validatableInput.max != null &&
+        typeof validatableInput.value === 'number'
     ) {
-        isValid = isValid && validateObj.value < validateObj.max;
+        isValid = isValid && validatableInput.value <= validatableInput.max;
     }
-
     return isValid;
 }
 
-// Autobind decorator
+// autobind decorator
 function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
-    const adjustedDescriptor: PropertyDescriptor = {
+    const adjDescriptor: PropertyDescriptor = {
         configurable: true,
         get() {
             const boundFn = originalMethod.bind(this);
             return boundFn;
         }
     };
-    return adjustedDescriptor;
+    return adjDescriptor;
 }
 
+// Component Base Class
 abstract class Component<T extends HTMLElement, U extends HTMLElement> {
     templateElement: HTMLTemplateElement;
     hostElement: T;
@@ -136,7 +127,7 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
     constructor(
         templateId: string,
         hostElementId: string,
-        insertAtState: boolean,
+        insertAtStart: boolean,
         newElementId?: string
     ) {
         this.templateElement = document.getElementById(
@@ -149,12 +140,11 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
             true
         );
         this.element = importedNode.firstElementChild as U;
-
         if (newElementId) {
             this.element.id = newElementId;
         }
 
-        this.attach(insertAtState);
+        this.attach(insertAtStart);
     }
 
     private attach(insertAtBeginning: boolean) {
@@ -168,24 +158,13 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
     abstract renderContent(): void;
 }
 
+// ProjectList Class
 class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     assignedProjects: Project[];
 
     constructor(private type: 'active' | 'finished') {
         super('project-list', 'app', false, `${type}-projects`);
-        this.templateElement = document.getElementById(
-            'project-list'
-        )! as HTMLTemplateElement;
-        this.hostElement = document.getElementById('app')! as HTMLDivElement;
-
         this.assignedProjects = [];
-
-        const importedNode = document.importNode(
-            this.templateElement.content,
-            true
-        );
-        this.element = importedNode.firstElementChild as HTMLElement;
-        this.element.id = `${this.type}-projects`;
 
         this.configure();
         this.renderContent();
@@ -205,7 +184,7 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     }
 
     renderContent() {
-        const listId = `${this.type}-project-lists`;
+        const listId = `${this.type}-projects-list`;
         this.element.querySelector('ul')!.id = listId;
         this.element.querySelector('h2')!.textContent =
             this.type.toUpperCase() + ' PROJECTS';
@@ -213,11 +192,9 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
 
     private renderProjects() {
         const listEl = document.getElementById(
-            `${this.type}-project-lists`
-        ) as HTMLUListElement;
-
+            `${this.type}-projects-list`
+        )! as HTMLUListElement;
         listEl.innerHTML = '';
-
         for (const prjItem of this.assignedProjects) {
             const listItem = document.createElement('li');
             listItem.textContent = prjItem.title;
@@ -226,6 +203,7 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     }
 }
 
+// ProjectInput Class
 class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
     titleInputElement: HTMLInputElement;
     descriptionInputElement: HTMLInputElement;
@@ -233,7 +211,6 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
 
     constructor() {
         super('project-input', 'app', true, 'user-input');
-
         this.titleInputElement = this.element.querySelector(
             '#title'
         ) as HTMLInputElement;
@@ -261,15 +238,13 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
             value: enteredTitle,
             required: true
         };
-
         const descriptionValidatable: Validatable = {
             value: enteredDescription,
             required: true,
             minLength: 5
         };
-
         const peopleValidatable: Validatable = {
-            value: enteredPeople,
+            value: +enteredPeople,
             required: true,
             min: 1,
             max: 5
@@ -280,7 +255,7 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
             !validate(descriptionValidatable) ||
             !validate(peopleValidatable)
         ) {
-            alert('Invalid Input. Please try again!');
+            alert('Invalid input, please try again!');
             return;
         } else {
             return [enteredTitle, enteredDescription, +enteredPeople];
@@ -296,10 +271,10 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
     @autobind
     private submitHandler(event: Event) {
         event.preventDefault();
-        let userInput = this.gatherUserInput();
+        const userInput = this.gatherUserInput();
         if (Array.isArray(userInput)) {
-            const [title, description, people] = userInput;
-            projectState.addProject(title, description, people);
+            const [title, desc, people] = userInput;
+            projectState.addProject(title, desc, people);
             this.clearInputs();
         }
     }
